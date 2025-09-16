@@ -1,67 +1,72 @@
 import streamlit as st
-import joblib
 import pandas as pd
-import shap
-import matplotlib.pyplot as plt
+import joblib
 
-# Load trained model and features
-@st.cache_resource
-def load_model():
-    model = joblib.load("xgb_model.pkl")
-    features = joblib.load("xgb_features.pkl")
-    return model, features
+# Load model and features
+xgb = joblib.load("xgb_model.pkl")
+features = joblib.load("xgb_features.pkl")
 
-xgb_model, feature_names = load_model()
+st.title("Anti-Money Laundering Detection App")
+st.write("This app predicts whether a financial transaction is **suspicious** or **normal**.")
 
-
-# Streamlit App UI
-st.title("Credit Fraud / Loan Default Prediction")
-st.write("Enter applicant details to predict default/fraud risk and explain the decision.")
-
-# Example features — adjust based on your dataset
-numeric_inputs = {
-    "loan_amnt": st.number_input("Loan Amount ($)", min_value=500, max_value=50000, value=10000, step=500),
-    "int_rate": st.number_input("Interest Rate (%)", min_value=5.0, max_value=40.0, value=12.0, step=0.1),
-    "annual_inc": st.number_input("Annual Income ($)", min_value=5000, max_value=500000, value=60000, step=1000),
-    "dti": st.number_input("Debt-to-Income Ratio", min_value=0.0, max_value=50.0, value=15.0, step=0.1),
-    "revol_util": st.number_input("Revolving Credit Utilization (%)", min_value=0.0, max_value=150.0, value=30.0, step=0.1),
-    "total_acc": st.number_input("Total Credit Accounts", min_value=1, max_value=100, value=20, step=1),
+#Demo Transactions
+demo_transactions = {
+    "Normal Transaction": {
+        "loan_amnt": 8000, "term": 36, "Int Rate": 10.0, "Grade": "B", "Sub Grade": "B3",
+        "emp_length": "5 years", "Home Ownership": "MORTGAGE", "Annual Inc": 60000,
+        "purpose": "Debt Consolidation", "dti": 15.0, "Revol Util": 40.0, "Total Acc": 20
+    },
+    "Suspicious Transaction": {
+        "loan_amnt": 50000, "term": 60, "int_rate": 28.0, "grade": "G", "sub_grade": "G5",
+        "emp_length": "< 1 year", "Home Ownership": "RENT", "Annual Inc": 12000,
+        "purpose": "Small Business", "dti": 45.0, "Revol Util": 120.0, "Total Acc": 5
+    }
 }
 
-categorical_inputs = {
-    "term": st.selectbox("Loan Term", ["36 months", "60 months"]),
-    "grade": st.selectbox("Loan Grade", ["A","B","C","D","E","F","G"]),
-    "sub_grade": st.selectbox("Sub Grade", ["A1","A2","A3","B1","B2","C1","C2","D1","D2"]),
-    "emp_length": st.selectbox("Employment Length", ["< 1 year","1 year","2 years","5 years","10+ years"]),
-    "home_ownership": st.selectbox("Home Ownership", ["RENT","MORTGAGE","OWN"]),
-    "purpose": st.selectbox("Loan Purpose", ["credit_card","car","debt_consolidation","home_improvement","small_business","other"]),
-}
+mode = st.radio("Choose Input Mode", ["Manual Input", "Demo Mode"])
 
-# Predict button
+#Manual Input
+if mode == "Manual Input":
+    loan_amnt = st.number_input("Loan Amount($)", min_value=100, max_value=500000, value=10000, step=100)
+    term = st.selectbox("Term (months)", [36, 60])
+    int_rate = st.number_input("Interest Rate (%)", min_value=0.0, max_value=40.0, value=10.5, step=0.1)
+    grade = st.selectbox("Loan Grade", ["A", "B", "C", "D", "E", "F", "G"])
+    sub_grade = st.selectbox("Loan Sub-grade", [f"{g}{i}" for g in "ABCDEFG" for i in range(1, 6)])
+    emp_length = st.selectbox("Employment Length", ["< 1 year", "1 year", "2 years", "3 years", "4 years",
+                                                    "5 years", "6 years", "7 years", "8 years", "9 years", "10+ years"])
+    home_ownership = st.selectbox("Home Ownership", ["RENT", "OWN", "MORTGAGE", "OTHER"])
+    annual_inc = st.number_input("Annual Income", min_value=1000, max_value=1000000, value=50000, step=1000)
+    purpose = st.selectbox("Loan Purpose", [
+        "debt_consolidation", "Credit Card", "Home Improvement", "Major Purchase", "Small Business",
+        "car", "medical", "moving", "vacation", "wedding", "house", "renewable_energy", "educational", "other"
+    ])
+    dti = st.number_input("Debt-to-Income Ratio (DTI)", min_value=0.0, max_value=100.0, value=20.0, step=0.1)
+    revol_util = st.number_input("Revolving Credit Utilization (%)", min_value=0.0, max_value=150.0, value=50.0, step=0.1)
+    total_acc = st.number_input("Total Accounts", min_value=1, max_value=200, value=15, step=1)
 
-if st.button("Predict Risk"):
-# Create a single-row dataframe
-    input_data = {**numeric_inputs, **categorical_inputs}
-    input_df = pd.DataFrame([input_data])
+    input_data = pd.DataFrame([{
+        "loan_amnt": loan_amnt, "term": term, "int_rate": int_rate, "grade": grade,
+        "sub_grade": sub_grade, "emp_length": emp_length, "home_ownership": home_ownership,
+        "annual_inc": annual_inc, "purpose": purpose, "dti": dti,
+        "revol_util": revol_util, "total_acc": total_acc
+    }])
 
-# One-hot encode using feature names from training
-    input_encoded = pd.get_dummies(input_df)
-    input_encoded = input_encoded.reindex(columns=feature_names, fill_value=0)
+#Demo Input
+else:
+    demo_choice = st.selectbox("Select a Demo Transaction", list(demo_transactions.keys()))
+    input_data = pd.DataFrame([demo_transactions[demo_choice]])
+    st.write("### Selected Transaction:")
+    st.write(input_data)
 
-# Predict
-    prob = xgb_model.predict_proba(input_encoded)[0,1]
-    prediction = "HIGH RISK (Fraud/Default)" if prob >= 0.5 else "LOW RISK (Safe)"
+#Match features
+input_data = pd.get_dummies(input_data)
+input_data = input_data.reindex(columns=features, fill_value=0)
+
+#Predict
+if st.button("Predict"):
+    prob = xgb.predict_proba(input_data)[:, 1][0]
+    pred = int(prob >= 0.5)
 
     st.subheader("Prediction Result")
-    st.write(f"**{prediction}**")
-    st.write(f"Predicted Probability of Default/Fraud: **{prob:.2f}**")
-
-# SHAP Explainability
-    st.subheader("Feature Contribution (SHAP Explanation)")
-    explainer = shap.TreeExplainer(xgb_model)
-    shap_values = explainer(input_encoded)
-
-# Plot SHAP values for this individual
-    fig, ax = plt.subplots()
-    shap.plots.waterfall(shap_values[0], show=False)
-    st.pyplot(fig)
+    st.write(f"**Suspicion Score:** {prob:.2f}")
+    st.write(f"**Prediction:** {'Suspicious Transaction' if pred else 'Normal Transaction'}")
