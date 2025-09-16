@@ -1,67 +1,74 @@
 # Anti–Money Laundering (AML) Transaction Monitoring
 
 ## Overview
-This project uses machine learning to detect suspicious financial transactions that may indicate money laundering or other illicit activities. The solution is designed to help financial institutions comply with AML regulations, automate detection, and provide transparency for compliance teams.
+This project predicts suspicious and potentially illicit transactions using historical financial data and machine learning. The goal is to help banks and fintechs automate AML compliance, flag high-risk transactions, and provide transparency for regulatory audits.
 
-We developed:
-- Logistic Regression – interpretable baseline model
-- XGBoost – advanced model with strong predictive power
+Two models are developed:
+- Logistic Regression – interpretable baseline
+- XGBoost – advanced, high-performance model
 
-Model explainability is achieved using SHAP, highlighting key risk factors in transaction monitoring.
+SHAP values are leveraged to explain model decisions and identify key transaction risk factors.
 
 ## Business Problem
-Money laundering is a major compliance and reputational risk for banks and fintechs. Regulatory frameworks require robust AML systems to:
-- Detect and flag suspicious activity in real time
-- Reduce false negatives (missed money laundering cases)
-- Provide clear explanations for risk decisions, supporting regulatory audits
+Money laundering is a critical risk for financial institutions, leading to regulatory fines and reputational damage. An effective AML system should:
+- Detect suspicious transactions in real time
+- Minimize false negatives (missed laundering attempts)
+- Provide clear, explainable risk scores for compliance teams
 
 ## Tech Stack
 - Python (Pandas, Numpy)
-- Scikit-learn (Logistic Regression, pipelines)
-- XGBoost (gradient boosting)
-- SHAP (model explainability)
+- Scikit-learn (Logistic Regression)
+- XGBoost (gradient boosting for tabular data)
+- SHAP (explainable AI)
 - Jupyter Notebook
-- Streamlit (interactive web app)
+- Streamlit (for interactive web app)
 
-## Data
-- Synthetic or anonymized transaction records
-- Features: transaction amount, type, country, customer ID, timestamp, and engineered risk features (velocity, anomalies, geo-risk, customer profile)
+## Dataset
+- Source: Synthetic or anonymized transaction data
+- Features: amount, type, country, customer ID, timestamp, engineered features (velocity, anomalies, geo risk, customer profile)
 - Target:
-  - 1 → Suspicious (potential money laundering)
-  - 0 → Legitimate
+  - 1 → Suspicious Transaction
+  - 0 → Legitimate Transaction
 
 ## Project Pipeline
 **1. Data Preparation**
-- Cleaned and preprocessed transaction data
-- Engineered AML-specific risk features: velocity, anomalies, geo-risk, customer patterns
+- Data cleaning and preprocessing (remove irrelevant fields, handle missing values, encode categoricals)
+- Feature engineering: transaction velocity, anomaly scores, geo risk, customer patterns
 
 **2. Exploratory Data Analysis (EDA)**
-- Distribution of suspicious/legit transactions
-- Patterns by geography, amount, customer segments
+- Analyze distribution of flagged transactions
+- Identify trends based on amount, country, time, and customer segment
+- Correlation and risk factor analysis
 
 **3. Modeling**
-- Logistic Regression (baseline, ROC-AUC ~0.98)
-- XGBoost (advanced, ROC-AUC ~0.99–1.00)
-- Emphasis on recall (minimizing missed suspicious cases)
+- Logistic Regression (baseline, interpretable)
+- XGBoost (handles class imbalance, achieves high recall and precision)
 
 **4. Model Explainability**
-- SHAP identifies top risk drivers: amount, frequency, risky destinations
-- Global and local explanations for compliance
+- SHAP summary plots to highlight top risk drivers (amount, frequency, geo risk)
+- Local explanations for individual flagged transactions
 
 ## Results
-- **Logistic Regression**: ROC-AUC ~0.98
-- **XGBoost**: ROC-AUC ~0.99–1.00
-- **SHAP Insights**: Transaction amount, frequency, destination country are top indicators
+**Logistic Regression**
+- ROC-AUC: ~0.98
+- Good baseline interpretability
+
+**XGBoost**
+- ROC-AUC: ~0.99–1.00
+- Excellent recall for suspicious transactions
+
+**SHAP Insights**
+- Top predictors: transaction amount, frequency, destination country, customer pattern
 
 ## Repository Structure
 ```
 Anti-Money-Laundering/
-│── AML_Notebook.ipynb              # Jupyter Notebook: EDA, modeling, SHAP
-│── app.py                          # Streamlit app for transaction risk scoring
+│── AML_Notebook.ipynb              # Main notebook: EDA, preprocessing, modeling, explainability
+│── app.py                          # Streamlit web app for transaction scoring and explanations
 │── xgb_model.pkl                   # Trained XGBoost model
-│── xgb_features.pkl                # Feature list
-│── requirements.txt                # Dependencies
+│── xgb_features.pkl                # Feature list used in model
 │── README.md                       # Project documentation
+│── requirements.txt                # Dependencies
 ```
 
 ## Installation and Setup
@@ -88,15 +95,17 @@ Anti-Money-Laundering/
    ```
 
 ## Web App Usage
-- Enter transaction details (amount, country, frequency, etc.)
-- The app predicts whether a transaction is **Suspicious** or **Legitimate**, and explains the risk score with SHAP.
+- Input transaction details (amount, country, type, etc.)
+- Get a prediction: **Suspicious** or **Legitimate**
+- View SHAP explanations for each prediction
 
 ## Skills Demonstrated
 - Data cleaning and feature engineering for AML
-- Handling class imbalance and rare events
-- Model training and evaluation (ROC-AUC, recall)
-- Model explainability with SHAP
-- Deploying ML models with Streamlit
+- Handling imbalanced classes and rare events in fraud detection
+- Model evaluation (ROC-AUC, recall, F1)
+- Explainable AI with SHAP values
+- Saving/loading models with joblib
+- Deploying ML apps via Streamlit
 
 ## Dependencies
 ```
@@ -111,38 +120,31 @@ joblib
 ```
 
 ## Future Work
-- Hyperparameter tuning (GridSearchCV, Optuna)
-- Additional models (Random Forest, LightGBM)
-- Real-time transaction scoring API
-- Integration with core banking or fintech platforms
-- Enhanced geo-risk profiling (OFAC lists, high-risk countries)
-- Adapting models to new regulatory requirements
+- Hyperparameter optimization (GridSearchCV, Optuna)
+- Additional models (LightGBM, CatBoost, deep learning)
+- Real-time scoring API for production deployment
+- Integration with core banking or payment systems
+- Enhanced risk profiling using external lists (e.g. OFAC, PEP)
+- Scenario-based testing for new laundering typologies
 
 ## Author
 Hrishikesh Joshi
 
 ---
 
-## Appendix: Adapting AML Detection to India and Global Compliance
+## Appendix: Adapting AML Systems for Local and Global Compliance
 
-### 1. Regulatory Context
-- Aligns with global AML guidelines (FATF) and Indian regulations (PMLA, RBI AML standards)
-- Adaptable to other geographies with country-specific rules
+### 1. Regulatory Relevance
+- Complies with global AML standards (FATF) and can be adapted to local (e.g., RBI, FinCEN) regulations
 
-### 2. Data Sources for Indian/Global AML
-- RBI, FIU-IND, or bank-provided transaction datasets (India)
-- Public data on sanctioned entities, high-risk geographies
-- Synthetic data or Kaggle AML datasets for prototyping
+### 2. Feature Engineering for Local Contexts
+- Add KYC-based features, regional risk factors, and sector-specific red flags for local adaptation
 
-### 3. Feature Engineering for Local Compliance
-- Incorporate KYC (Aadhaar, PAN in India), high-cash-risk regions, sectoral risks (e.g., jewelry, real estate)
-- Dynamic risk scoring for new typologies
-
-### 4. Deployment & Audit-readiness
-- Explainable predictions for audit trails
-- Modular pipeline for integration with transaction monitoring systems
+### 3. Deployment Considerations
+- Streamlit app can be integrated into compliance or transaction monitoring workflows
+- Model explanations support regulatory audits and internal investigations
 
 ---
 
 **In summary:**  
-This project demonstrates a robust, explainable workflow for AML transaction monitoring. The methods and pipeline can be adapted to meet regulatory requirements in India or globally, enhancing compliance and risk mitigation for banks and fintechs.
+This project demonstrates an end-to-end, explainable workflow for AML transaction monitoring. The pipeline is adaptable for different regulatory environments and financial institutions, enhancing compliance and risk management.
